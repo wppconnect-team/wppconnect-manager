@@ -1,0 +1,215 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Transactions {% endblock %}
+
+{% block stylesheets %}
+<!-- Adicione seus estilos CSS aqui, se necessário -->
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-4">
+    <div class="d-block mb-4 mb-md-0">
+        <nav aria-label="breadcrumb" class="d-none d-md-inline-block">
+            <ol class="breadcrumb breadcrumb-dark breadcrumb-transparent">
+                <li class="breadcrumb-item">
+                    <a href="#">
+                        <svg class="icon icon-xxs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 20V12H6v8H2V10H0L10 0l10 10h-2v10h-4v-8h-4v8z"/>
+                        </svg>
+                    </a>
+                </li>
+                <li class="breadcrumb-item"><a href="#">Volt</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Transactions</li>
+            </ol>
+        </nav>
+        <h2 class="h4">All Orders</h2>
+        <p class="mb-0">Your web analytics dashboard template.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="#" class="btn btn-sm btn-gray-800 d-inline-flex align-items-center">
+            <svg class="icon icon-xs me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            New Plan
+        </a>
+        <!-- <div class="btn-group ms-2 ms-lg-3">
+            <button type="button" class="btn btn-sm btn-outline-gray-600">Share</button>
+            <button type="button" class="btn btn-sm btn-outline-gray-600">Export</button>
+        </div> -->
+    </div>
+</div>
+
+<div class="table-settings mb-4">
+    <div class="row align-items-center justify-content-between">
+        <div class="col col-md-6 col-lg-3 col-xl-4">
+            <div class="input-group me-2 me-lg-3 fmxw-400">
+                <span class="input-group-text">
+                    <svg class="icon icon-xs" x-description="Heroicon name: solid/search" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                    </svg>
+                </span>
+                <input type="text" class="form-control" placeholder="Search orders">
+            </div>
+        </div>
+        <div class="col-4 col-md-2 col-xl-1 ps-md-0 text-end">
+            <div class="dropdown">
+                <!-- <button class="btn btn-link text-dark dropdown-toggle dropdown-toggle-split m-0 p-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 10a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm8-8a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4z"></path>
+                    </svg>
+                </button> -->
+                <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end pb-0">
+                    <span class="small ps-3 fw-bold text-dark">Show</span>
+                    <a class="dropdown-item d-flex align-items-center fw-bold" href="#">10 
+                        <svg class="icon icon-xxs ms-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M5 9a1 1 0 011.707-.707L10 11.586l3.293-3.293A1 1 0 1114.707 9.707l-4 4a1 1 0 01-1.414 0l-4-4A1 1 0 015 9z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                    <a class="dropdown-item fw-bold" href="#">20</a>
+                    <a class="dropdown-item fw-bold rounded-bottom" href="#">30</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-body border-0 shadow table-wrapper table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th class="border-gray-200">ID</th>
+                <th class="border-gray-200">Instance Name</th>
+                <th class="border-gray-200">Token</th>
+                <th class="border-gray-200">Status</th>
+                <th class="border-gray-200">Start-Session</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for instance in instances %}
+            <tr>
+                <td>
+                    <a href="#" class="fw-bold">
+                      {{ instance.id }}
+                    </a>
+                </td>
+                <td>
+                    <span class="fw-normal">{{ instance.instance_name }}</span>
+                </td>
+                <td><span class="fw-normal">{{ instance.token }}</span></td>
+                <td><span class="fw-normal">{{ instance.status }}</span></td>
+                <td>
+                    <span class="fw-normal">
+                        <button class="btn btn-block btn-gray-800 mb-3" data-bs-toggle="modal" data-bs-target="#modal-default" onclick="startSession('{{ instance.instance_name }}')">Start</button>
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="card-footer px-3 border-0 d-flex flex-column flex-lg-row align-items-center justify-content-between">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination mb-0">
+                <li class="page-item">
+                    <a class="page-link" href="#">Previous</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">1</a>
+                </li>
+                <li class="page-item active">
+                    <a class="page-link" href="#">2</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">3</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">4</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">5</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="fw-normal small mt-4 mt-lg-0">Showing <b>5</b> out of <b>25</b> entries</div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-default" tabindex="-1" role="dialog" aria-labelledby="modal-default" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h6 modal-title">QR Code</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="qrcode" class="mb-3">
+                    <!-- A imagem do QR code será inserida aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script type="text/javascript">
+    const baseUrl = 'http://localhost:21465/api'; // Base URL para a API
+
+    function startSession(instanceName) {
+        fetch(`/api/get-token/${instanceName}`)  // Requisita o token do backend
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+            })
+            .then(data => {
+                const token = data.token;
+                if (token) {
+                    const url = `${baseUrl}/${instanceName}/start-session`; // Monta a URL completa
+                    const payload = {
+                        webhook: null,
+                        waitQrCode: false
+                    };
+
+                    return fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}` // Adiciona o cabeçalho Authorization
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    throw new Error('Token not found');
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+            })
+            .then(data => {
+                if (data.qrcode && data.qrcode !== 'data:image/png;base64,') {
+                    // QR Code encontrado, exibe na página
+                    const img = document.createElement('img');
+                    img.src = data.qrcode;
+                    document.getElementById('qrcode').innerHTML = '';
+                    document.getElementById('qrcode').appendChild(img);
+                } else {
+                    alert('QR Code not found in response');
+                }
+            })
+            .catch(error => {
+                console.error('Error starting session:', error.message || error);
+                alert('Error starting session: ' + (error.message || error));
+            });
+    }
+</script>
+{% endblock javascripts %}

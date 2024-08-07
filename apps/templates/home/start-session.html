@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>List Instances</title>
+</head>
+<body>
+    <h1>List of Instances</h1>
+    <ul>
+        {% for instance in instances %}
+            <li>
+                <a href="{{ url_for('authentication_blueprint.start_session', instance_id=instance.id) }}">{{ instance.instance_name }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    {% if msg %}
+        <p>{{ msg }}</p>
+    {% endif %}
+</body>
+</html>
