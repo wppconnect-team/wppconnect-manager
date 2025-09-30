@@ -13,7 +13,7 @@ flask-restx==1.1.0
 python-dotenv==0.19.2
 
 gunicorn==22.0.0
-Flask-Minify==0.37
+Flask-Minify==0.50
 
 flask-dance==7.0.0
 blinker==1.6.2
