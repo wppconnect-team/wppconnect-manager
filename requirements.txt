@@ -6,7 +6,7 @@ flask_migrate==4.0.4
 WTForms==3.0.1
 flask_wtf==1.2.2
 flask-sqlalchemy==3.0.5
-sqlalchemy==2.0.21
+sqlalchemy==2.0.43
 email_validator==2.0.0
 flask-restx==1.1.0
 
