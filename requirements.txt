@@ -4,7 +4,7 @@ jinja2==3.1.6
 flask-login==0.6.2
 flask_migrate==4.0.4
 WTForms==3.0.1
-flask_wtf==1.2.1
+flask_wtf==1.2.2
 flask-sqlalchemy==3.0.5
 sqlalchemy==2.0.21
 email_validator==2.0.0
