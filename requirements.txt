@@ -16,7 +16,7 @@ gunicorn==22.0.0
 Flask-Minify==0.37
 
 flask-dance==7.0.0
-blinker==1.6.2
+blinker==1.9.0
 
 # flask_mysqldb
 # psycopg2-binary
