@@ -7,7 +7,7 @@ WTForms==3.0.1
 flask_wtf==1.2.2
 flask-sqlalchemy==3.0.5
 sqlalchemy==2.0.21
-email_validator==2.0.0
+email_validator==2.3.0
 flask-restx==1.1.0
 
 python-dotenv==0.19.2
