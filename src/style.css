@@ -1,0 +1,968 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #24362e;
+  background: #f4f7f5;
+  font-synthesis: none;
+  --line: #e1e8e3;
+  --muted: #6c7c73;
+  --surface: #fff;
+  --soft: #edf5f0;
+  --accent: #087f61;
+}
+:root[data-theme="dark"] {
+  --line: #2b3c32;
+  --muted: #9caea2;
+  --surface: #17241f;
+  --soft: #22382d;
+  --accent: #6cdbb9;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font-family: inherit;
+}
+a {
+  color: inherit;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: 32px;
+  letter-spacing: -1.1px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  margin-bottom: 8px;
+}
+p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 252px;
+  padding: 31px 20px 20px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  z-index: 20;
+}
+.brand {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+  margin-bottom: 43px;
+}
+.brand img {
+  width: 39px;
+  height: 39px;
+}
+.brand small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 3px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.workspace-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--muted);
+  margin-bottom: 19px;
+}
+.workspace-label span {
+  letter-spacing: 0;
+  background: var(--soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.sidebar nav {
+  display: grid;
+  gap: 6px;
+  margin-top: 28px;
+}
+.sidebar nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  padding: 13px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: 550;
+  font-size: 13px;
+}
+.sidebar nav button.active {
+  background: var(--soft);
+  color: var(--accent);
+  font-weight: 750;
+}
+.sidebar nav button svg:last-child:not(:first-child) {
+  margin-left: auto;
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 40px;
+}
+.sidebar-bottom > small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.community-card {
+  padding: 17px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  background: linear-gradient(145deg, var(--soft), var(--surface));
+}
+.community-card > svg {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.community-card strong {
+  display: block;
+  font-size: 12px;
+}
+.community-card p {
+  font-size: 11px;
+  margin: 6px 0;
+}
+.community-card button {
+  padding-left: 0;
+  font-size: 11px;
+}
+.main-shell {
+  margin-left: 252px;
+  width: calc(100% - 252px);
+}
+.topbar {
+  height: 78px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+}
+.topbar-left,
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.breadcrumb {
+  font-size: 12px;
+  color: var(--muted);
+}
+.breadcrumb b {
+  font-weight: 550;
+  margin-left: 8px;
+}
+.topbar .MuiChip-root {
+  font-size: 10px;
+}
+.mobile-menu.MuiIconButton-root {
+  display: none;
+}
+main {
+  max-width: 1540px;
+  margin: auto;
+  padding: 38px 38px 60px;
+}
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.9px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+.page-heading p {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  box-shadow: 0 3px 6px #10271a02;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 26px;
+}
+.stat {
+  display: flex;
+  gap: 18px;
+  padding: 23px;
+  align-items: flex-start;
+}
+.icon-tile {
+  display: inline-flex;
+  background: var(--soft);
+  color: var(--accent);
+  border-radius: 12px;
+  padding: 12px;
+}
+.stat div > span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.stat strong {
+  font-size: 31px;
+  letter-spacing: -1px;
+  display: block;
+  margin-top: 7px;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 23px 24px 16px;
+}
+.section-heading p {
+  font-size: 12px;
+  margin: 0;
+}
+.filterbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 22px;
+}
+.filterbar > svg {
+  color: var(--muted);
+}
+.table-head,
+.session-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 24px;
+  border-top: 1px solid var(--line);
+}
+.table-head {
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 1px;
+  color: var(--muted);
+  background: var(--soft);
+}
+.session-name {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+.session-name strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.session-name small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.session-avatar {
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--accent);
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.session-row > .MuiChip-root {
+  justify-self: start;
+  font-size: 10px;
+}
+.session-row.selected {
+  background: var(--soft);
+}
+.empty-state {
+  text-align: center;
+  padding: 44px 20px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state h3 {
+  font-size: 15px;
+  margin: 15px 0 5px;
+}
+.empty-state p {
+  font-size: 12px;
+  max-width: 370px;
+  margin: 8px auto;
+}
+.session-selector {
+  margin: 24px 0 18px;
+}
+.session-detail {
+  display: grid;
+  grid-template-columns: 1fr 235px;
+  gap: 30px;
+  padding: 26px;
+}
+.session-detail h2 {
+  font-size: 23px;
+  overflow-wrap: anywhere;
+}
+.session-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.field-help {
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 14px;
+}
+.qr-panel {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 220px;
+  color: var(--muted);
+}
+.qr-panel img {
+  width: 190px;
+  max-width: 100%;
+  border: 10px solid white;
+  border-radius: 8px;
+}
+.qr-panel small {
+  font-size: 10px;
+  text-align: center;
+}
+.welcome-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 65px;
+  align-items: center;
+  min-height: calc(100vh - 210px);
+  max-width: 1130px;
+  margin: 0 auto;
+}
+.welcome-copy h1 {
+  font-size: clamp(32px, 3.4vw, 53px);
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin: 23px 0;
+}
+.welcome-copy h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.welcome-copy p {
+  font-size: 14px;
+  max-width: 420px;
+}
+.welcome-copy > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.welcome-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  margin-top: 25px;
+}
+.welcome-features span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.welcome-features svg {
+  color: var(--accent);
+}
+.connection-art {
+  display: flex;
+  align-items: center;
+  padding: 35px 12px;
+  margin: 20px 0;
+  max-width: 420px;
+}
+.art-node,
+.art-hub {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  box-shadow: 0 10px 35px #0a5b3310;
+  background: var(--surface);
+  width: 60px;
+  height: 60px;
+  color: var(--accent);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.art-hub {
+  width: 88px;
+  height: 88px;
+  background: var(--accent);
+  color: var(--surface);
+  border: 8px solid var(--soft);
+}
+.art-line {
+  height: 1px;
+  background: var(--line);
+  flex: 1;
+  position: relative;
+}
+.art-line:after {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  left: 50%;
+}
+.login-panel {
+  padding: 30px;
+  box-shadow: 0 18px 60px #173d2710;
+}
+.login-panel h2 {
+  font-size: 23px;
+  margin-top: 22px;
+  letter-spacing: -0.7px;
+}
+.login-panel > p {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.endpoint {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.endpoint button {
+  margin-left: auto;
+}
+.status-dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.login-panel form {
+  display: grid;
+  gap: 15px;
+}
+.login-panel form .MuiFormControlLabel-label {
+  font-size: 12px;
+}
+.login-panel form .field-help {
+  margin: -5px 0 2px;
+}
+.login-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-top: 25px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+.server-card {
+  padding: 25px;
+}
+.server-card > svg {
+  color: var(--accent);
+  margin-bottom: 17px;
+}
+.url-text {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.about {
+  padding: 40px;
+}
+.about h1 {
+  margin-top: 22px;
+}
+.about .toolbar {
+  flex-wrap: wrap;
+}
+.form-fields {
+  display: grid;
+  gap: 20px;
+  padding-top: 10px;
+}
+.chat-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: 650px;
+  max-height: calc(100vh - 280px);
+  min-height: 400px;
+  overflow: hidden;
+}
+.chat-list {
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.chat-list > .MuiTextField-root {
+  padding: 0 15px 14px;
+}
+.chat-list .section-heading {
+  padding: 18px 15px 10px;
+}
+.chat-list-scroll {
+  overflow: auto;
+  flex: 1;
+}
+.chat-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 16px;
+  cursor: pointer;
+}
+.chat-item div:last-child {
+  min-width: 0;
+}
+.chat-item strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.chat-item small {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-item.active {
+  background: var(--soft);
+}
+.chat-conversation {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.chat-welcome {
+  height: 100%;
+  background: radial-gradient(ellipse at center, var(--soft), transparent);
+}
+.chat-welcome h2 {
+  margin-top: 24px;
+}
+.conversation-heading {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.conversation-heading strong {
+  font-size: 13px;
+}
+.conversation-heading small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.chat-back.MuiIconButton-root {
+  display: none;
+}
+.message-list {
+  overflow: auto;
+  flex: 1;
+  background: var(--soft);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.message {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0 13px 13px 13px;
+  padding: 10px 13px;
+  align-self: flex-start;
+  max-width: 85%;
+  min-width: 90px;
+  overflow-wrap: anywhere;
+}
+.message.outgoing {
+  align-self: flex-end;
+  border-radius: 13px 0 13px 13px;
+  border-color: #6ab29566;
+}
+.message p {
+  color: inherit;
+  white-space: pre-wrap;
+  font-size: 13px;
+  margin: 2px 0;
+}
+.message > strong {
+  font-size: 10px;
+  color: var(--accent);
+}
+.message > small {
+  font-size: 9px;
+  color: var(--muted);
+  display: block;
+  text-align: right;
+  margin-top: 4px;
+}
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+.media img,
+.media video {
+  max-width: 100%;
+  max-height: 270px;
+  border-radius: 7px;
+}
+.media audio {
+  max-width: 100%;
+  width: 250px;
+}
+.media .MuiButton-root {
+  font-size: 11px;
+}
+.nav-overlay {
+  display: none;
+}
+@media (min-width: 1500px) {
+  main {
+    padding-top: 48px;
+  }
+  .welcome-grid {
+    gap: 90px;
+  }
+  .welcome-copy h1 {
+    font-size: 56px;
+  }
+}
+@media (max-width: 1150px) {
+  .sidebar {
+    width: 220px;
+  }
+  .main-shell {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+  }
+  main {
+    padding: 28px 24px;
+  }
+  .welcome-grid {
+    gap: 26px;
+    grid-template-columns: 1fr 340px;
+  }
+  .login-panel {
+    padding: 23px;
+  }
+  .welcome-features {
+    display: grid;
+  }
+  .chat-layout {
+    grid-template-columns: 230px 1fr;
+  }
+  .stat {
+    padding: 17px;
+    gap: 10px;
+  }
+}
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.15s;
+  }
+  .sidebar.visible {
+    transform: none;
+  }
+  .nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #0006;
+    border: 0;
+    z-index: 19;
+  }
+  .main-shell {
+    margin: 0;
+    width: 100%;
+  }
+  .mobile-menu.MuiIconButton-root {
+    display: inline-flex;
+  }
+  .topbar {
+    padding: 0 20px;
+  }
+  .welcome-grid {
+    max-width: 760px;
+    gap: 25px;
+  }
+  .topbar .MuiChip-root {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  main {
+    padding: 26px 16px;
+  }
+  .topbar {
+    height: 65px;
+    padding: 0 12px;
+  }
+  .topbar .breadcrumb {
+    font-size: 10px;
+  }
+  .toolbar {
+    gap: 2px;
+  }
+  .topbar .MuiAvatar-root {
+    display: none;
+  }
+  .welcome-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+  }
+  .welcome-copy {
+    width: 100%;
+  }
+  .welcome-copy h1 {
+    font-size: 38px;
+    margin: 17px 0;
+  }
+  .welcome-copy p {
+    font-size: 12px;
+  }
+  .welcome-features,
+  .connection-art,
+  .welcome-copy > small {
+    display: none;
+  }
+  .login-panel {
+    width: 100%;
+    max-width: 420px;
+  }
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 23px;
+  }
+  h1 {
+    font-size: 28px;
+  }
+  .stats-grid {
+    gap: 8px;
+  }
+  .stat {
+    padding: 14px 10px;
+    display: block;
+  }
+  .stat .icon-tile {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  .stat div > span {
+    font-size: 10px;
+  }
+  .stat strong {
+    font-size: 25px;
+  }
+  .section-heading {
+    padding: 17px 14px;
+  }
+  .filterbar {
+    padding: 0 14px 16px;
+    gap: 8px;
+  }
+  .filterbar > svg {
+    display: none;
+  }
+  .filterbar > .MuiTextField-root:last-child {
+    min-width: 110px;
+  }
+  .table-head,
+  .session-row {
+    grid-template-columns: minmax(0, 1fr) 95px;
+    gap: 10px;
+    padding: 14px;
+  }
+  .table-head > span:last-child {
+    display: none;
+  }
+  .session-row > button {
+    grid-column: 1/-1;
+    justify-self: end;
+    font-size: 11px;
+    padding: 0;
+  }
+  .session-detail {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  .session-detail > .qr-panel {
+    min-height: 180px;
+  }
+  .session-actions {
+    gap: 6px;
+  }
+  .session-actions button {
+    font-size: 11px;
+  }
+  .chat-layout {
+    display: block;
+    height: 620px;
+    max-height: none;
+  }
+  .chat-list {
+    height: 100%;
+  }
+  .chat-conversation {
+    display: none;
+    height: 100%;
+  }
+  .has-chat .chat-list {
+    display: none;
+  }
+  .has-chat .chat-conversation {
+    display: flex;
+  }
+  .chat-back.MuiIconButton-root {
+    display: inline-flex;
+  }
+  .conversation-heading {
+    padding: 12px;
+  }
+  .composer {
+    padding: 10px;
+    gap: 3px;
+  }
+  .message-list {
+    padding: 12px;
+  }
+  .message {
+    max-width: 94%;
+  }
+  .session-selector > .MuiTextField-root {
+    width: 100%;
+  }
+  .about {
+    padding: 24px;
+  }
+}
+body,
+h1,
+h2,
+h3,
+button,
+input,
+textarea {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}

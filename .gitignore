@@ -1,4 +1,8 @@
-/build
 /node_modules
-*.png
+/dist
+/test-results
+/playwright-report
+*.tsbuildinfo
 *.tgz
+*.tar.gz
+/graphify-out
