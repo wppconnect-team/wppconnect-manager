@@ -1,0 +1,8 @@
+services:
+  manager:
+    image: ghcr.io/wppconnect-team/wppconnect-manager:2.0.0
+    ports: ["8080:80"]
+    environment:
+      # Browser-visible URL, not the internal Docker service name.
+      MANAGER_SERVER_URL: "${MANAGER_SERVER_URL:-http://localhost:21465}"
+    restart: unless-stopped

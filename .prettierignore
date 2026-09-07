@@ -1,0 +1,6 @@
+package-lock.json
+dist
+graphify-out
+test-results
+playwright-report
+CHANGELOG.md
