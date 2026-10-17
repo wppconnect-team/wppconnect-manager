@@ -324,3 +324,53 @@ test("media failure remains visible and does not become a broken download", asyn
     0,
   );
 });
+
+test("session status polling pauses while off the sessions page", async ({
+  page,
+}) => {
+  await fixtures(page);
+  let statusCalls = 0;
+  await page.route("**/status-session", (route) => {
+    statusCalls += 1;
+    return route.fulfill({ json: { status: "CONNECTED" } });
+  });
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await page.getByRole("button", { name: "Abrir conversas" }).click();
+  await page.waitForTimeout(1000);
+  const baseline = statusCalls;
+  await page.waitForTimeout(5000);
+  expect(statusCalls).toBe(baseline);
+});
+
+test("document title tracks the page and profile removal uses a dialog", async ({
+  page,
+  isMobile,
+}) => {
+  await fixtures(page);
+  await login(page);
+  await expect(page).toHaveTitle(/Visão geral · WPPConnect Manager/);
+  await navigate(page, "Conversas", isMobile);
+  await expect(page).toHaveTitle(/Conversas · WPPConnect Manager/);
+  await navigate(page, "Servidores", isMobile);
+  await page.getByRole("button", { name: "Adicionar servidor" }).click();
+  await page.getByLabel("Nome", { exact: true }).fill("Segundo servidor");
+  await page.getByLabel("URL", { exact: true }).fill("http://127.0.0.1:21465");
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  const card = page
+    .locator("article.server-card")
+    .filter({ hasText: "Segundo servidor" });
+  await card.getByRole("button", { name: "Remover", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Remover", exact: true })
+    .click();
+  await expect(
+    page.locator("article.server-card").filter({ hasText: "Segundo servidor" }),
+  ).toHaveCount(0);
+});
