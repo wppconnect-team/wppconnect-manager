@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   Alert,
   Avatar,
@@ -38,7 +45,7 @@ import {
 } from "lucide-react";
 import { Client, createId, serverUrl, type Access, type Profile } from "./api";
 import { readProfiles, saveProfiles } from "./preferences";
-import Workspace from "./Workspace";
+const Workspace = lazy(() => import("./Workspace"));
 export type Translate = (pt: string, en: string) => string;
 export type Page =
   | "sessions"
@@ -404,14 +411,22 @@ export default function App() {
                 onSettings={() => setPage("settings")}
               />
             ) : (
-              <Workspace
-                key={`${profile.id}:${access.credential}:${access.session}`}
-                profile={profile}
-                access={access}
-                page={page}
-                setPage={setPage}
-                t={t}
-              />
+              <Suspense
+                fallback={
+                  <div className="panel empty-state">
+                    <CircularProgress size={28} />
+                  </div>
+                }
+              >
+                <Workspace
+                  key={`${profile.id}:${access.credential}:${access.session}`}
+                  profile={profile}
+                  access={access}
+                  page={page}
+                  setPage={setPage}
+                  t={t}
+                />
+              </Suspense>
             )}
           </main>
         </div>
