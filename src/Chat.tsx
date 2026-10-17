@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Avatar,
@@ -23,6 +29,8 @@ import {
 } from "lucide-react";
 import { belongsToChat, Client, list, mergeMessages, wid } from "./api";
 import type { Page, Translate } from "./App";
+const MESSAGE_LIMIT = 300;
+const LIST_LIMIT = 200;
 
 export default function Chat({
   client: parent,
@@ -56,6 +64,7 @@ export default function Chat({
   const [group, setGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [participants, setParticipants] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => () => client.dispose(), [client]);
   useEffect(() => {
     let alive = true;
@@ -101,7 +110,9 @@ export default function Chat({
       )
       .then((data) => {
         if (alive)
-          setMessages((previous) => mergeMessages(list(data), previous));
+          setMessages((previous) =>
+            mergeMessages(list(data), previous, MESSAGE_LIMIT),
+          );
       })
       .catch((e) => {
         if (alive && !client.signal.aborted) setError(String(e));
@@ -109,11 +120,15 @@ export default function Chat({
     return () => {
       alive = false;
     };
-  }, [client, session, token, selected, revision, refresh]);
+  }, [client, session, token, selected, refresh]);
   useEffect(() => {
     if (event && selected && belongsToChat(event, selected))
-      setMessages((prev) => mergeMessages(prev, [event]));
+      setMessages((prev) => mergeMessages(prev, [event], MESSAGE_LIMIT));
   }, [event, selected]);
+  useEffect(() => {
+    const element = listRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [messages]);
   async function send(file?: File) {
     const destination = selected;
     const body = text;
@@ -137,7 +152,7 @@ export default function Chat({
           reader.readAsDataURL(file);
         });
         payload.filename = file.name;
-        payload.caption = body;
+        if (body.trim()) payload.caption = body;
       } else payload.message = body;
       await client.session(
         session,
@@ -182,11 +197,15 @@ export default function Chat({
     item.pushname ||
     item.contact?.name ||
     wid(item.id);
-  const filtered = items.filter((item) =>
-    `${display(item)} ${wid(item.id)}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const deferredSearch = useDeferredValue(search);
+  const filtered = useMemo(() => {
+    const term = deferredSearch.toLowerCase();
+    return items
+      .filter((item) =>
+        `${display(item)} ${wid(item.id)}`.toLowerCase().includes(term),
+      )
+      .slice(0, LIST_LIMIT);
+  }, [items, deferredSearch]);
   return (
     <>
       {error && (
@@ -242,7 +261,6 @@ export default function Chat({
               <button
                 className={`chat-item ${selected === wid(item.id) ? "active" : ""}`}
                 key={wid(item.id)}
-                disabled={sending}
                 onClick={() => setSelected(wid(item.id))}
               >
                 <Avatar
@@ -305,7 +323,7 @@ export default function Chat({
                   </small>
                 </div>
               </div>
-              <div className="message-list" aria-live="polite">
+              <div className="message-list" aria-live="polite" ref={listRef}>
                 {!messages.length && (
                   <div className="empty-state">
                     <p>
@@ -537,10 +555,11 @@ function Media({
       if (!data.base64 || !data.mimetype)
         throw Error(t("Mídia indisponível", "Media unavailable"));
       if (client.signal.aborted || !mounted.current) return;
-      const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
-      setSource(
-        URL.createObjectURL(new Blob([bytes], { type: data.mimetype })),
-      );
+      const blob = await (
+        await fetch(`data:${data.mimetype};base64,${data.base64}`)
+      ).blob();
+      if (client.signal.aborted || !mounted.current) return;
+      setSource(URL.createObjectURL(blob));
       setMime(data.mimetype);
     } catch (e) {
       if (!client.signal.aborted && mounted.current) setError(String(e));

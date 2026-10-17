@@ -3,6 +3,7 @@ import {
   ApiError,
   belongsToChat,
   Client,
+  createId,
   list,
   mergeMessages,
   serverUrl,
@@ -99,5 +100,39 @@ describe("message isolation", () => {
         "two@c.us",
       ),
     ).toBe(false);
+  });
+  it("keeps messages without a usable id instead of dropping them", () => {
+    const withoutId = { from: "a@c.us", to: "me@c.us", t: 5, body: "hello" };
+    expect(mergeMessages([], [withoutId])).toHaveLength(1);
+    expect(mergeMessages([withoutId], [withoutId])).toHaveLength(1);
+  });
+  it("routes incoming group events that lack a chatId via the group id", () => {
+    expect(
+      belongsToChat(
+        { from: "participant@c.us", to: "group@g.us" },
+        "group@g.us",
+      ),
+    ).toBe(true);
+    expect(
+      belongsToChat(
+        { from: "participant@c.us", to: "group@g.us" },
+        "other@g.us",
+      ),
+    ).toBe(false);
+  });
+});
+describe("profile ids", () => {
+  it("generates ids even where crypto.randomUUID is unavailable", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) => {
+        for (let i = 0; i < bytes.length; i += 1) bytes[i] = i;
+        return bytes;
+      },
+    });
+    expect(createId()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    vi.stubGlobal("crypto", {});
+    expect(createId()).toMatch(/^id-/);
   });
 });

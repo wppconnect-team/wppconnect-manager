@@ -324,3 +324,25 @@ test("media failure remains visible and does not become a broken download", asyn
     0,
   );
 });
+
+test("session status polling pauses while off the sessions page", async ({
+  page,
+}) => {
+  await fixtures(page);
+  let statusCalls = 0;
+  await page.route("**/status-session", (route) => {
+    statusCalls += 1;
+    return route.fulfill({ json: { status: "CONNECTED" } });
+  });
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await page.getByRole("button", { name: "Abrir conversas" }).click();
+  await page.waitForTimeout(1000);
+  const baseline = statusCalls;
+  await page.waitForTimeout(5000);
+  expect(statusCalls).toBe(baseline);
+});
