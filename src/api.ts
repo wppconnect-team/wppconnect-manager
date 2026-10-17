@@ -32,6 +32,21 @@ export function serverUrl(value: string): string {
     throw new Error("Invalid server URL");
   return url.href.replace(/\/$/, "").replace(/\/api$/, "");
 }
+export function createId(): string {
+  const crypto = globalThis.crypto;
+  if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
+  if (typeof crypto?.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 export class Client {
   private controller = new AbortController();
   constructor(
@@ -124,19 +139,38 @@ export function wid(value: any): string {
     : value?._serialized ||
         (value?.user && value?.server ? `${value.user}@${value.server}` : "");
 }
-export function mergeMessages(previous: any[], incoming: any[]): any[] {
+const syntheticMessageIds = new WeakMap<object, string>();
+export function mergeMessages(
+  previous: any[],
+  incoming: any[],
+  limit = 0,
+): any[] {
   const messages = new Map<string, any>();
   for (const item of [...previous, ...incoming]) {
-    const id = wid(item.id);
-    if (id) messages.set(id, item);
+    let id = wid(item?.id);
+    if (!id && item && typeof item === "object") {
+      id = syntheticMessageIds.get(item) || "";
+      if (!id) {
+        id = `local:${createId()}`;
+        syntheticMessageIds.set(item, id);
+      }
+    }
+    if (!id) id = `local:${createId()}`;
+    messages.set(id, item);
   }
-  return [...messages.values()].sort(
+  const merged = [...messages.values()].sort(
     (a, b) => (a.t || a.timestamp || 0) - (b.t || b.timestamp || 0),
   );
+  return limit > 0 && merged.length > limit ? merged.slice(-limit) : merged;
 }
 export function belongsToChat(message: any, chat: string) {
+  if (
+    wid(message?.chatId) === chat ||
+    (message?.fromMe ? wid(message?.to) : wid(message?.from)) === chat
+  )
+    return true;
   return (
-    wid(message.chatId) === chat ||
-    (message.fromMe ? wid(message.to) : wid(message.from)) === chat
+    chat.endsWith("@g.us") &&
+    (wid(message?.from) === chat || wid(message?.to) === chat)
   );
 }
