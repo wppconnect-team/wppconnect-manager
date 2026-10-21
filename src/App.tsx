@@ -35,7 +35,7 @@ import {
   Sun,
   Users,
 } from "lucide-react";
-import { Client, serverUrl, type Access, type Profile } from "./api";
+import { Client, createId, serverUrl, type Access, type Profile } from "./api";
 import { readProfiles, saveProfiles } from "./preferences";
 import Workspace from "./Workspace";
 export type Translate = (pt: string, en: string) => string;
@@ -287,7 +287,7 @@ export default function App() {
                     variant="contained"
                     startIcon={<Plus size={18} />}
                     onClick={() =>
-                      setEdit({ id: crypto.randomUUID(), name: "", url: "" })
+                      setEdit({ id: createId(), name: "", url: "" })
                     }
                   >
                     {t("Adicionar servidor", "Add server")}
