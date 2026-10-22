@@ -482,6 +482,7 @@ function SessionContent({
   const [revision, setRevision] = useState(0);
   const [event, setEvent] = useState<any>(null);
   const objectUrl = useRef("");
+  const requestId = useRef(0);
   const pageRef = useRef(page);
   const updateRef = useRef<() => void>(() => {});
   const wasSessions = useRef(page === "sessions");
@@ -514,10 +515,15 @@ function SessionContent({
             : base;
       timer = setTimeout(tick, delay);
     }
-    async function update(): Promise<boolean> {
+    // Only the latest request may update the UI. Timer, socket and navigation
+    // triggers can overlap, and a slow QRCODE response must not replace a newer
+    // CONNECTED result (or recreate an obsolete QR).
+    async function update(): Promise<boolean | null> {
+      const id = ++requestId.current;
       try {
         const data = await client.session(name, token, "status-session");
-        if (!alive) return true;
+        if (!alive || client.signal.aborted || id !== requestId.current)
+          return null;
         const next = String(data.status).toUpperCase();
         setStatus(next);
         setError("");
@@ -531,21 +537,22 @@ function SessionContent({
               `${encodeURIComponent(name)}/qrcode-session`,
               { token, blob: true },
             );
-            if (!alive) return true;
+            if (!alive || client.signal.aborted || id !== requestId.current)
+              return null;
             clearQr();
             objectUrl.current = URL.createObjectURL(blob);
             setQr(objectUrl.current);
           } catch {
-            if (alive) clearQr();
+            if (alive && id === requestId.current) clearQr();
           }
         } else clearQr();
         return true;
       } catch (e) {
-        if (alive && !client.signal.aborted) {
-          setStatus("UNKNOWN");
-          clearQr();
-          setError(String(e));
-        }
+        if (!alive || client.signal.aborted || id !== requestId.current)
+          return null;
+        setStatus("UNKNOWN");
+        clearQr();
+        setError(String(e));
         return false;
       }
     }
@@ -559,8 +566,8 @@ function SessionContent({
         schedule();
         return;
       }
-      const ok = await update();
-      failures = ok ? 0 : failures + 1;
+      const result = await update();
+      failures = result === false ? failures + 1 : 0;
       schedule();
     }
     updateRef.current = () => void update();

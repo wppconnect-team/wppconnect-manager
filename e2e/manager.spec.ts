@@ -346,3 +346,56 @@ test("session status polling pauses while off the sessions page", async ({
   await page.waitForTimeout(5000);
   expect(statusCalls).toBe(baseline);
 });
+
+test("a late QRCODE response cannot overwrite a newer CONNECTED status", async ({
+  page,
+  isMobile,
+}) => {
+  await fixtures(page);
+  let statusCalls = 0;
+  let qrCalls = 0;
+  let releaseFirst!: () => void;
+  let firstHandled!: () => void;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const firstResponse = new Promise<void>((resolve) => {
+    firstHandled = resolve;
+  });
+  await page.route("**/qrcode-session", (route) => {
+    qrCalls += 1;
+    return route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWlEAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+  await page.route("**/status-session", async (route) => {
+    statusCalls += 1;
+    if (statusCalls === 1) {
+      await firstGate;
+      await route.fulfill({ json: { status: "QRCODE" } });
+      firstHandled();
+    } else await route.fulfill({ json: { status: "CONNECTED" } });
+  });
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await expect.poll(() => statusCalls).toBeGreaterThanOrEqual(1);
+  await navigate(page, "Conversas", isMobile);
+  await navigate(page, "Visão geral", isMobile);
+  await expect.poll(() => statusCalls).toBeGreaterThanOrEqual(2);
+  releaseFirst();
+  await firstResponse;
+  await page.waitForTimeout(250);
+  await expect(page.locator(".session-detail")).toContainText("CONNECTED");
+  await expect(
+    page.getByRole("img", { name: "QR Code para conectar o WhatsApp" }),
+  ).toHaveCount(0);
+  expect(qrCalls).toBe(0);
+});
