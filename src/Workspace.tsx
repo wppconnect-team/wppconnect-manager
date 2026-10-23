@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -53,7 +53,7 @@ export default function Workspace({
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
-  async function refresh() {
+  async function refresh(): Promise<boolean> {
     setLoading(true);
     try {
       const data =
@@ -79,17 +79,33 @@ export default function Workspace({
         setSessions(data.sessions);
         setError("");
       }
+      return true;
     } catch (e) {
       if (!client.signal.aborted) setError(String(e));
+      return false;
     } finally {
       if (!client.signal.aborted) setLoading(false);
     }
   }
   useEffect(() => {
-    void refresh();
-    const timer = setInterval(() => void refresh(), 10000);
+    let alive = true;
+    let failures = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const base = 10000;
+    const max = 60000;
+    async function tick() {
+      if (!alive) return;
+      if (!document.hidden) {
+        const ok = await refresh();
+        failures = ok ? 0 : failures + 1;
+      }
+      if (!alive) return;
+      timer = setTimeout(tick, Math.min(max, base * 2 ** failures));
+    }
+    void tick();
     return () => {
-      clearInterval(timer);
+      alive = false;
+      if (timer !== undefined) clearTimeout(timer);
       client.dispose();
     };
   }, [client]);
@@ -249,7 +265,7 @@ export default function Workspace({
             <div className="session-table">
               <div className="table-head">
                 <span>{t("NOME DA SESSÃO", "SESSION NAME")}</span>
-                <span>STATUS</span>
+                <span>{t("STATUS", "STATUS")}</span>
                 <span>{t("AÇÕES", "ACTIONS")}</span>
               </div>
               {visible.map((s) => (
@@ -406,7 +422,7 @@ function SessionScope({
   name: string;
   page: Page;
   t: Translate;
-  onChanged: () => Promise<void>;
+  onChanged: () => Promise<unknown>;
   openChat: () => void;
 }) {
   const [client] = useState(() => new Client(url, access));
@@ -454,7 +470,7 @@ function SessionContent({
   token: string;
   page: Page;
   t: Translate;
-  onChanged: () => Promise<void>;
+  onChanged: () => Promise<unknown>;
   openChat: () => void;
 }) {
   const [status, setStatus] = useState("UNKNOWN");
@@ -465,16 +481,49 @@ function SessionContent({
   const [socketState, setSocketState] = useState(false);
   const [revision, setRevision] = useState(0);
   const [event, setEvent] = useState<any>(null);
+  const objectUrl = useRef("");
+  const requestId = useRef(0);
+  const pageRef = useRef(page);
+  const updateRef = useRef<() => void>(() => {});
+  const wasSessions = useRef(page === "sessions");
+  const clearQr = useCallback(() => {
+    if (objectUrl.current) {
+      URL.revokeObjectURL(objectUrl.current);
+      objectUrl.current = "";
+    }
+    setQr("");
+  }, []);
+  useEffect(() => {
+    pageRef.current = page;
+    if (page === "sessions" && !wasSessions.current) updateRef.current();
+    wasSessions.current = page === "sessions";
+  }, [page]);
   useEffect(() => {
     let alive = true;
-    let inFlight = false;
-    let objectUrl = "";
-    async function update() {
-      if (inFlight) return;
-      inFlight = true;
+    let connected = false;
+    let failures = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const base = 4000;
+    const max = 60000;
+    function schedule() {
+      if (!alive) return;
+      const delay =
+        failures > 0
+          ? Math.min(max, base * 2 ** failures)
+          : connected
+            ? 15000
+            : base;
+      timer = setTimeout(tick, delay);
+    }
+    // Only the latest request may update the UI. Timer, socket and navigation
+    // triggers can overlap, and a slow QRCODE response must not replace a newer
+    // CONNECTED result (or recreate an obsolete QR).
+    async function update(): Promise<boolean | null> {
+      const id = ++requestId.current;
       try {
         const data = await client.session(name, token, "status-session");
-        if (!alive) return;
+        if (!alive || client.signal.aborted || id !== requestId.current)
+          return null;
         const next = String(data.status).toUpperCase();
         setStatus(next);
         setError("");
@@ -488,56 +537,81 @@ function SessionContent({
               `${encodeURIComponent(name)}/qrcode-session`,
               { token, blob: true },
             );
-            if (!alive) return;
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-            objectUrl = URL.createObjectURL(blob);
-            setQr(objectUrl);
+            if (!alive || client.signal.aborted || id !== requestId.current)
+              return null;
+            clearQr();
+            objectUrl.current = URL.createObjectURL(blob);
+            setQr(objectUrl.current);
           } catch {
-            if (alive) setQr("");
+            if (alive && id === requestId.current) clearQr();
           }
-        } else setQr("");
+        } else clearQr();
+        return true;
       } catch (e) {
-        if (alive && !client.signal.aborted) {
-          setStatus("UNKNOWN");
-          setQr("");
-          setError(String(e));
-        }
-      } finally {
-        inFlight = false;
+        if (!alive || client.signal.aborted || id !== requestId.current)
+          return null;
+        setStatus("UNKNOWN");
+        clearQr();
+        setError(String(e));
+        return false;
       }
     }
+    function pollNow() {
+      if (pageRef.current === "sessions" && !document.hidden) void update();
+    }
+    async function tick() {
+      if (!alive) return;
+      if (pageRef.current !== "sessions" || document.hidden) {
+        failures = 0;
+        schedule();
+        return;
+      }
+      const result = await update();
+      failures = result === false ? failures + 1 : 0;
+      schedule();
+    }
+    updateRef.current = () => void update();
     const socket = io(`${client.url}/manager`, {
       path: `${new URL(client.url).pathname.replace(/\/$/, "")}/socket.io`,
       auth: { session: name, token },
       transports: ["websocket", "polling"],
     });
     socket.on("connect", () => {
+      connected = true;
       setSocketState(true);
       setRevision((r) => r + 1);
-      void update();
+      pollNow();
     });
-    socket.on("disconnect", () => setSocketState(false));
-    socket.on("connect_error", () => setSocketState(false));
+    socket.on("disconnect", () => {
+      connected = false;
+      setSocketState(false);
+    });
+    socket.on("connect_error", () => {
+      connected = false;
+      setSocketState(false);
+    });
     socket.on("message", (payload) => {
       if (payload.session === name) setEvent(payload.data);
     });
     socket.on("status", (payload) => {
-      if (payload.session === name) void update();
+      if (payload.session === name) pollNow();
     });
-    void update();
-    const timer = setInterval(() => void update(), 4000);
+    void tick();
     return () => {
       alive = false;
-      clearInterval(timer);
+      if (timer !== undefined) clearTimeout(timer);
       socket.disconnect();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl.current) {
+        URL.revokeObjectURL(objectUrl.current);
+        objectUrl.current = "";
+      }
     };
-  }, [client, name, token]);
+  }, [client, name, token, clearQr]);
   async function action(operation: string) {
     setBusy(true);
     setError("");
     setConfirmAction("");
-    setQr("");
+    clearQr();
     try {
       if (operation === "clear")
         await client.request(`manager/sessions/${encodeURIComponent(name)}`, {
@@ -609,7 +683,7 @@ function SessionContent({
                 disabled={busy}
                 onClick={() => setConfirmAction("logout-session")}
               >
-                Logout WhatsApp
+                {t("Logout do WhatsApp", "Logout WhatsApp")}
               </Button>
               {client.access.mode === "admin" && (
                 <Button
