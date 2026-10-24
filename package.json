@@ -25,7 +25,7 @@
     "lucide-react": "1.46.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "socket.io-client": "4.8.3"
+    "socket.io-client": "4.8.4"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
