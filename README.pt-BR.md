@@ -1,78 +1,111 @@
-<!-- wppconnect-official-brand -->
+[English](./README.md) | **Português (Brasil)**
+
 <p align="center">
-  <a href="https://wppconnect-team.github.io/">
+  <a href="https://wppconnect.io/">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://wppconnect-team.github.io/brand/wppconnect-dark.png" />
       <img src="https://wppconnect-team.github.io/brand/wppconnect-light.png" alt="WPPConnect" width="220" height="121" />
     </picture>
   </a>
 </p>
-<!-- /wppconnect-official-brand -->
 
 # WPPConnect Manager
 
-Painel de código aberto para **gerenciar sessões e conversar pelo WPPConnect Server**. Este é o antigo `wppconnect-frontend`, reativado e modernizado com React, TypeScript, Vite e Material UI.
+Gerencie sessões e conversas do WPPConnect Server em uma aplicação web auto-hospedada.
 
-![Visão geral](docs/screenshots/overview-desktop.png)
+Um projeto do ecossistema WPPConnect, mantido pela WPPConnect Team.
 
-_Captura real da aplicação com dados de demonstração. Não representa validação com conta WhatsApp conectada._
+[Primeiros passos](#primeiros-passos) | [Documentação](#documentação) | [Como contribuir](#como-contribuir) | [Apoie a WPPConnect](#apoie-o-projeto)
 
-## O que oferece
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE) [![CI](https://github.com/wppconnect-team/wppconnect-manager/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wppconnect-team/wppconnect-manager/actions/workflows/ci.yml) [![Documentation](https://img.shields.io/badge/docs-WPPConnect-blue)](https://wppconnect.io/) [![Open Collective](https://img.shields.io/badge/Open%20Collective-WPPConnect-blue)](https://opencollective.com/wppconnect)
 
-- Perfis de múltiplos servidores, selecionando um por vez.
-- Sessões com busca, filtros, status, QR atualizado, conexão/reconexão, encerramento, logout e limpeza de dados.
-- Acesso administrativo por `SECRET_KEY` ou restrito por nome e token de sessão.
-- Conversas, histórico disponível, contatos, criação de grupos, texto e anexos de até 20 MB.
-- Imagens, stickers, áudio, vídeo e download de arquivos.
-- Eventos autenticados por sessão, temas claro/escuro, português/inglês e layout responsivo.
+## Visão geral
 
-## Começar com Docker
+Para operadores do WPPConnect Server. Antes chamado `wppconnect-frontend`, a versão 2 substitui o frontend demonstrativo por React, TypeScript, Vite e Material UI, preservando histórico e licença. A interface exige um Server separado com o protocolo Manager 1 (`GET /api/manager/info`).
 
-```bash
+## Funcionalidades
+
+- Múltiplos perfis de servidor; inventário de sessões, atualização do QR, início/reconexão, encerramento, logout e limpeza.
+- Acesso administrativo ou restrito à sessão; as credenciais permanecem em memória.
+- Conversas, contatos, grupos e mídia com limite de 20 MB por anexo na interface; eventos autenticados em tempo real.
+- Inglês/português, temas claro/escuro e layouts para computador/celular.
+
+![Visão geral do Manager com dados sintéticos de demonstração](docs/screenshots/overview-desktop.png)
+
+Capturas e testes de navegador usam dados sintéticos. Pareamento real, envio/recepção e disponibilidade de mídia dependem do Server e do WhatsApp conectados; histórico/mídia indisponíveis são informados como erros.
+
+## Primeiros passos
+
+Use um WPPConnect Server existente com o protocolo Manager 1 e Docker:
+
+```sh
 docker run --rm -p 8080:80 \
   -e MANAGER_SERVER_URL=http://localhost:21465 \
   ghcr.io/wppconnect-team/wppconnect-manager:2.0.0
 ```
 
-Abra **http://localhost:8080/manager/**. A URL do server precisa ser acessível pelo navegador. O [Compose](compose.yaml) também pode ser usado com `docker compose up -d`.
+Abra `http://localhost:8080/manager/`. Informe o segredo do servidor para administrar ou nome/token de sessão para acesso restrito. A imagem integrada do Server oferece a interface em `http://localhost:21465/manager/`. Para desenvolver a interface use Node.js `>=22.12` (o CI usa 22.22.2), `npm ci` e `npm run dev`.
 
-Na imagem integrada do WPPConnect Server, abra **http://localhost:21465/manager/**. O painel usa o mesmo servidor por padrão; `MANAGER_ENABLED=false` desativa somente a interface. A versão integrada verifica o checksum do bundle durante o build.
+## Configuração
 
-É necessário um server com **Manager protocol 1**, disponível em `/api/manager/info`. Versões anteriores precisam ser atualizadas. As APIs antigas são preservadas no server.
+`MANAGER_SERVER_URL` deve ser acessível pelo navegador, sem credenciais na URL. O container cria `/manager/config.js` ao iniciar; reinicie/recrie para alterar. Builds pelos fontes usam [public/config.js](public/config.js). Use HTTPS na interface e na API para acesso remoto. Proxies devem encaminhar `/api/`, `/manager/` e `/socket.io/` com upgrade WebSocket. Apenas nomes/URLs de perfis, idioma e tema persistem no navegador. Recarregar exige informar as credenciais novamente. As configurações antigas `window.IP_SERVER`, `window.IP_SOCKET_IO` e `@WPPConnect-Token` não são importadas. Encerre a sessão antes de limpar seus dados. Fixe versões das imagens; o rollback exige Server e interface com protocolos compatíveis.
 
-## Credenciais
+## Documentação
 
-A `SECRET_KEY` permite administrar todas as sessões. Para acesso restrito, use o nome da sessão e seu token. Credenciais ficam apenas em memória e são solicitadas novamente ao recarregar, trocar de servidor ou sair. Somente nomes, URLs, idioma e tema são persistidos no navegador.
+- [Configuração do Compose independente](./compose.yaml)
+- [Integração com o Server](https://github.com/wppconnect-team/wppconnect-server/blob/main/docs/manager.md)
+- [Pacotes de versão e checksums](https://github.com/wppconnect-team/wppconnect-manager/releases)
+- [Detalhes técnicos e agradecimentos preservados](documentation/readme-reference.md)
 
-Não coloque credenciais na URL ou em `config.js`. Ao acessar remotamente, use HTTPS na interface e no server. O proxy precisa encaminhar `/api/` e `/socket.io/`, incluindo upgrade WebSocket; `/manager` é o namespace autenticado dos eventos.
+## Ecossistema WPPConnect
 
-## Desenvolvimento e validação
+| Projeto | Finalidade | Quando usar |
+| --- | --- | --- |
+| [WPPConnect Server](https://github.com/wppconnect-team/wppconnect-server) | Execute uma API REST para sessões, mensagens e webhooks do WhatsApp. | Expor operações de sessão e mensagens por HTTP. |
+| [WPPConnect Server CLI](https://github.com/wppconnect-team/server-cli) | Inicie o WPPConnect Server pelo comando `wppserver`. | Iniciar o Server Node.js pelo terminal. |
 
-```bash
-npm ci
-npm run dev
+## Apoie o projeto
+
+A WPPConnect é mantida por uma comunidade de código aberto. Seu apoio ajuda a financiar a manutenção, a infraestrutura, a documentação e o trabalho das pessoas que desenvolvem o ecossistema.
+
+Se a WPPConnect ajuda seu projeto ou sua empresa, considere fazer uma contribuição pontual ou apoiar de forma recorrente.
+
+**[Apoie a WPPConnect no Open Collective](https://opencollective.com/wppconnect)**
+
+As contribuições são voluntárias. Consulte a página oficial para acompanhar as informações financeiras atuais. Você também pode ajudar com código, testes, documentação, traduções e relatos de problemas bem descritos.
+
+Beneficiários oficiais adicionais em [.github/FUNDING.yml](.github/FUNDING.yml): [joaosouz4dev](https://github.com/sponsors/joaosouz4dev), [manfe](https://github.com/sponsors/manfe).
+
+## Como contribuir
+
+Contribuições de código, testes, exemplos, documentação e traduções são bem-vindas. Para mudanças maiores, discuta a proposta em uma issue primeiro. Ao relatar um problema, informe as versões do projeto/runtime, uma reprodução mínima e logs sem dados sensíveis. Atualize `README.md` e `README.pt-BR.md` na mesma alteração quando mudar instalação, configuração, funcionalidades, exemplos, licença ou arrecadação.
+
+Após instalar as dependências de desenvolvimento, use as verificações pertinentes à sua alteração:
+
+```sh
 npm run lint
 npm run typecheck
 npm test
 npm run build
-npx playwright install chromium
 npm run test:e2e
 ```
 
-O CI usa Node 22.22.2. Cadastre a URL do seu server em **Servidores**; o Vite serve a interface, não a API WhatsApp. O Docker gera `config.js` no início e aceita mudança de URL sem rebuild.
+Exemplos e testes que dependem de conta exigem validação separada com uma conta de teste autorizada. Nunca anexe credenciais ou arquivos de sessão a uma issue.
 
-Os testes de navegador usam dados sintéticos. Pareamento e envio/recebimento reais exigem uma conta de teste autorizada e são uma validação separada.
+## Comunidade e suporte
 
-## Atualização
+Use as [issues do repositório](https://github.com/wppconnect-team/wppconnect-manager/issues) para bugs reproduzíveis e propostas de funcionalidades. Para dúvidas de uso, participe pelos canais oficiais:
 
-Os antigos `IP_SERVER`, `IP_SOCKET_IO` e tokens locais não são importados. Cadastre os perfis novamente. As sessões existentes permanecem no server. Fixe tags/digests das imagens e registre a versão anterior para rollback; o painel não cria banco nem migração.
+- [Discord](https://discord.gg/JU5JGGKGNG)
+- [Telegram](https://t.me/wppconnect)
+- [YouTube](https://www.youtube.com/c/wppconnect)
 
-Para limpar dados, encerre primeiro a sessão. Logout desvincula o WhatsApp; encerramento apenas para a sessão. Erros de mídia e histórico são exibidos e dependem do conteúdo disponível no server.
+Este projeto é independente e não é afiliado nem endossado pelo WhatsApp ou pela Meta. Siga os termos aplicáveis e obtenha autorização para operações de conta e mensagens.
 
-[Documentação completa em inglês](README.md) · [WPPConnect Server](https://github.com/wppconnect-team/wppconnect-server) · [Releases](https://github.com/wppconnect-team/wppconnect-manager/releases)
+## Licença
 
-## Patrocínio
+[Apache License 2.0 (Apache-2.0)](./LICENSE).
 
-[joaosouz4dev](https://github.com/sponsors/joaosouz4dev) · [manfe](https://github.com/sponsors/manfe) · [Open Collective WPPConnect](https://opencollective.com/wppconnect)
+Copyright WPPConnect Team and contributors.
 
-Licença [Apache-2.0](LICENSE). WPPConnect Team e colaboradores.
+O documento jurídico original e os avisos de autoria existentes são preservados. Componentes de terceiros mantêm seus próprios termos.
