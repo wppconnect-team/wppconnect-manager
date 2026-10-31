@@ -174,9 +174,18 @@ export default function App() {
               setPage("sessions");
             }}
           >
-            <img src="/manager/favicon.svg" alt="" />
+            <img
+              src={
+                dark
+                  ? "/manager/brand/wppconnect-dark.png"
+                  : "/manager/brand/wppconnect-light.png"
+              }
+              alt="WPPConnect"
+              width="120"
+              height="66"
+            />
             <span>
-              WPPConnect<small>MANAGER</small>
+              <small>MANAGER</small>
             </span>
           </a>
           <div className="workspace-label">
