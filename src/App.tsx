@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -34,10 +34,11 @@ import {
   Settings,
   Sun,
   Users,
+  UsersRound,
 } from "lucide-react";
-import { Client, serverUrl, type Access, type Profile } from "./api";
+import { Client, createId, serverUrl, type Access, type Profile } from "./api";
 import { readProfiles, saveProfiles } from "./preferences";
-import Workspace from "./Workspace";
+const Workspace = lazy(() => import("./Workspace"));
 export type Translate = (pt: string, en: string) => string;
 export type Page =
   | "sessions"
@@ -61,9 +62,10 @@ export default function App() {
     localStorage.getItem("wpp-manager-language") || "pt",
   );
   const [edit, setEdit] = useState<Profile | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Profile | null>(null);
   const [error, setError] = useState("");
   const t: Translate = (pt, en) => (lang === "pt" ? pt : en);
-  useEffect(() => {
+  useLayoutEffect(() => {
     localStorage.setItem("wpp-manager-theme", dark ? "dark" : "light");
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, [dark]);
@@ -71,6 +73,18 @@ export default function App() {
     localStorage.setItem("wpp-manager-language", lang);
     document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
   }, [lang]);
+  useEffect(() => {
+    const titles: Record<Page, [string, string]> = {
+      sessions: ["Visão geral", "Overview"],
+      chat: ["Conversas", "Conversations"],
+      contacts: ["Contatos", "Contacts"],
+      groups: ["Grupos", "Groups"],
+      settings: ["Servidores", "Servers"],
+      about: ["Sobre", "About"],
+    };
+    const [pt, en] = titles[page];
+    document.title = `${lang === "pt" ? pt : en} · WPPConnect Manager`;
+  }, [page, lang]);
   const theme = useMemo(
     () =>
       createTheme({
@@ -98,7 +112,7 @@ export default function App() {
     ["sessions", t("Visão geral", "Overview"), LayoutDashboard],
     ["chat", t("Conversas", "Conversations"), MessageSquare],
     ["contacts", t("Contatos", "Contacts"), Users],
-    ["groups", t("Grupos", "Groups"), Users],
+    ["groups", t("Grupos", "Groups"), UsersRound],
     ["settings", t("Servidores", "Servers"), Settings],
   ];
   function updateProfile() {
@@ -128,6 +142,18 @@ export default function App() {
       );
     }
   }
+  function removeProfile() {
+    const target = removeTarget;
+    if (!target) return;
+    const next = profiles.filter((x) => x.id !== target.id);
+    saveProfiles(next);
+    setProfiles(next);
+    if (target.id === profile.id) {
+      setAccess(null);
+      setProfileId(next[0].id);
+    }
+    setRemoveTarget(null);
+  }
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -148,9 +174,18 @@ export default function App() {
               setPage("sessions");
             }}
           >
-            <img src="/manager/favicon.svg" alt="" />
+            <img
+              src={
+                dark
+                  ? "/manager/brand/wppconnect-dark.png"
+                  : "/manager/brand/wppconnect-light.png"
+              }
+              alt="WPPConnect"
+              width="120"
+              height="66"
+            />
             <span>
-              WPPConnect<small>MANAGER</small>
+              <small>MANAGER</small>
             </span>
           </a>
           <div className="workspace-label">
@@ -287,7 +322,7 @@ export default function App() {
                     variant="contained"
                     startIcon={<Plus size={18} />}
                     onClick={() =>
-                      setEdit({ id: crypto.randomUUID(), name: "", url: "" })
+                      setEdit({ id: createId(), name: "", url: "" })
                     }
                   >
                     {t("Adicionar servidor", "Add server")}
@@ -310,24 +345,7 @@ export default function App() {
                       <Button
                         disabled={profiles.length === 1}
                         color="error"
-                        onClick={() => {
-                          if (
-                            !confirm(
-                              t(
-                                "Remover este perfil local?",
-                                "Remove this local profile?",
-                              ),
-                            )
-                          )
-                            return;
-                          const next = profiles.filter((x) => x.id !== p.id);
-                          saveProfiles(next);
-                          setProfiles(next);
-                          if (p.id === profile.id) {
-                            setAccess(null);
-                            setProfileId(next[0].id);
-                          }
-                        }}
+                        onClick={() => setRemoveTarget(p)}
                       >
                         {t("Remover", "Remove")}
                       </Button>
@@ -395,14 +413,22 @@ export default function App() {
                 onSettings={() => setPage("settings")}
               />
             ) : (
-              <Workspace
-                key={`${profile.id}:${access.credential}:${access.session}`}
-                profile={profile}
-                access={access}
-                page={page}
-                setPage={setPage}
-                t={t}
-              />
+              <Suspense
+                fallback={
+                  <div className="panel empty-state">
+                    <CircularProgress size={28} />
+                  </div>
+                }
+              >
+                <Workspace
+                  key={`${profile.id}:${access.credential}:${access.session}`}
+                  profile={profile}
+                  access={access}
+                  page={page}
+                  setPage={setPage}
+                  t={t}
+                />
+              </Suspense>
             )}
           </main>
         </div>
@@ -442,6 +468,26 @@ export default function App() {
             </Button>
             <Button variant="contained" onClick={updateProfile}>
               {t("Salvar", "Save")}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={!!removeTarget} onClose={() => setRemoveTarget(null)}>
+          <DialogTitle>{t("Remover perfil", "Remove profile")}</DialogTitle>
+          <DialogContent>
+            {t(
+              "Remover este perfil local? As credenciais não são afetadas.",
+              "Remove this local profile? Credentials are not affected.",
+            )}
+            <p>
+              <strong>{removeTarget?.name}</strong>
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRemoveTarget(null)}>
+              {t("Cancelar", "Cancel")}
+            </Button>
+            <Button color="error" onClick={removeProfile}>
+              {t("Remover", "Remove")}
             </Button>
           </DialogActions>
         </Dialog>
@@ -614,7 +660,8 @@ function Login({
           </Button>
         </form>
         <div className="login-footer">
-          <Heart size={14} /> OPEN SOURCE · SELF-HOSTED
+          <Heart size={14} />{" "}
+          {t("CÓDIGO ABERTO · AUTO-HOSPEDADO", "OPEN SOURCE · SELF-HOSTED")}
         </div>
       </section>
     </div>

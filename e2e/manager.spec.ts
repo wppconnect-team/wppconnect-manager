@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 
 test("expired QR is removed and closed state remains explicit", async ({
   page,
@@ -324,3 +324,243 @@ test("media failure remains visible and does not become a broken download", asyn
     0,
   );
 });
+
+test("media decodes successfully under the deployed CSP", async ({ page }) => {
+  await fixtures(page);
+  await page.route("**/all-messages-in-chat/**", (route) =>
+    route.fulfill({
+      json: {
+        response: [
+          { id: "media-ok", type: "image", from: "5511999999999@c.us", t: 1 },
+        ],
+      },
+    }),
+  );
+  await page.route("**/download-media", (route) =>
+    route.fulfill({
+      json: {
+        base64:
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWlEAAAAASUVORK5CYII=",
+        mimetype: "image/png",
+      },
+    }),
+  );
+  await login(page);
+  await deployCsp(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await page.getByRole("button", { name: "Abrir conversas" }).click();
+  await page.getByRole("button", { name: /Contato de demonstração/ }).click();
+  await page.getByRole("button", { name: /Carregar mídia/ }).click();
+  const image = page.locator(".media img");
+  await expect(image).toBeVisible();
+  await expect
+    .poll(() =>
+      image.evaluate(
+        (element: HTMLImageElement) =>
+          element.complete && element.naturalWidth > 0,
+      ),
+    )
+    .toBe(true);
+  await expect(page.locator(".media a[download]")).toBeVisible();
+});
+
+test("reconnect reloads the open chat history", async ({ page }) => {
+  await fixtures(page);
+  let historyVersion = 0;
+  await page.route("**/atendimento/all-messages-in-chat/**", (route) =>
+    route.fulfill({
+      json: {
+        response: [
+          {
+            id: "before",
+            from: "5511999999999@c.us",
+            body: "Before outage",
+            type: "chat",
+            t: 1,
+          },
+          ...(historyVersion > 0
+            ? [
+                {
+                  id: "during",
+                  from: "5511999999999@c.us",
+                  body: "Received during outage",
+                  type: "chat",
+                  t: 2,
+                },
+              ]
+            : []),
+        ],
+      },
+    }),
+  );
+  const socket = await mockSocket(page);
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await page.getByRole("button", { name: "Abrir conversas" }).click();
+  await page.getByRole("button", { name: /Contato de demonstração/ }).click();
+  await expect(page.getByText("Before outage")).toBeVisible();
+  await expect(page.getByText("Eventos conectados")).toBeVisible();
+  await expect.poll(() => socket.connections).toBeGreaterThanOrEqual(1);
+  historyVersion = 1;
+  await socket.sockets[0].close();
+  await expect
+    .poll(() => socket.connections, { timeout: 15000 })
+    .toBeGreaterThanOrEqual(2);
+  await expect(page.getByText("Received during outage")).toBeVisible();
+});
+
+async function deployCsp(page: Page) {
+  const config = await readFile("docker/nginx.conf", "utf8");
+  const match = /set \$csp "([^"]+)"/.exec(config);
+  if (!match) throw new Error("CSP not found in docker/nginx.conf");
+  await page.evaluate((policy) => {
+    const meta = document.createElement("meta");
+    meta.httpEquiv = "Content-Security-Policy";
+    meta.content = policy;
+    document.head.appendChild(meta);
+  }, match[1]);
+}
+
+async function mockSocket(page: Page) {
+  const sockets: any[] = [];
+  let connections = 0;
+  await page.context().routeWebSocket(/\/socket\.io\//, (ws) => {
+    connections += 1;
+    sockets.push(ws);
+    const sid = `fixture-${connections}`;
+    ws.send(
+      `0${JSON.stringify({
+        sid,
+        upgrades: [],
+        pingInterval: 60000,
+        pingTimeout: 60000,
+        maxPayload: 1000000,
+      })}`,
+    );
+    ws.onMessage((message) => {
+      const packet = typeof message === "string" ? message : message.toString();
+      if (!packet.startsWith("40")) return;
+      const separator = packet.indexOf(",");
+      const namespace = separator >= 0 ? packet.slice(2, separator + 1) : "";
+      ws.send(`40${namespace}${JSON.stringify({ sid })}`);
+    });
+  });
+  return {
+    sockets,
+    get connections() {
+      return connections;
+    },
+  };
+}
+
+test("session status polling pauses while off the sessions page", async ({
+  page,
+}) => {
+  await fixtures(page);
+  let statusCalls = 0;
+  await page.route("**/status-session", (route) => {
+    statusCalls += 1;
+    return route.fulfill({ json: { status: "CONNECTED" } });
+  });
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await page.getByRole("button", { name: "Abrir conversas" }).click();
+  await page.waitForTimeout(1000);
+  const baseline = statusCalls;
+  await page.waitForTimeout(5000);
+  expect(statusCalls).toBe(baseline);
+});
+
+test("a late QRCODE response cannot overwrite a newer CONNECTED status", async ({
+  page,
+  isMobile,
+}) => {
+  await fixtures(page);
+  let statusCalls = 0;
+  let qrCalls = 0;
+  let releaseFirst!: () => void;
+  let firstHandled!: () => void;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const firstResponse = new Promise<void>((resolve) => {
+    firstHandled = resolve;
+  });
+  await page.route("**/qrcode-session", (route) => {
+    qrCalls += 1;
+    return route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWlEAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+  await page.route("**/status-session", async (route) => {
+    statusCalls += 1;
+    if (statusCalls === 1) {
+      await firstGate;
+      await route.fulfill({ json: { status: "QRCODE" } });
+      firstHandled();
+    } else await route.fulfill({ json: { status: "CONNECTED" } });
+  });
+  await login(page);
+  await page
+    .locator(".session-row")
+    .filter({ hasText: "atendimento" })
+    .getByRole("button", { name: "Gerenciar" })
+    .click();
+  await expect.poll(() => statusCalls).toBeGreaterThanOrEqual(1);
+  await navigate(page, "Conversas", isMobile);
+  await navigate(page, "Visão geral", isMobile);
+  await expect.poll(() => statusCalls).toBeGreaterThanOrEqual(2);
+  releaseFirst();
+  await firstResponse;
+  await page.waitForTimeout(250);
+  await expect(page.locator(".session-detail")).toContainText("CONNECTED");
+  await expect(
+    page.getByRole("img", { name: "QR Code para conectar o WhatsApp" }),
+  ).toHaveCount(0);
+  expect(qrCalls).toBe(0);
+});
+
+test("document title tracks the page and profile removal uses a dialog", async ({
+  page,
+  isMobile,
+}) => {
+  await fixtures(page);
+  await login(page);
+  await expect(page).toHaveTitle(/Visão geral · WPPConnect Manager/);
+  await navigate(page, "Conversas", isMobile);
+  await expect(page).toHaveTitle(/Conversas · WPPConnect Manager/);
+  await navigate(page, "Servidores", isMobile);
+  await page.getByRole("button", { name: "Adicionar servidor" }).click();
+  await page.getByLabel("Nome", { exact: true }).fill("Segundo servidor");
+  await page.getByLabel("URL", { exact: true }).fill("http://127.0.0.1:21465");
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  const card = page
+    .locator("article.server-card")
+    .filter({ hasText: "Segundo servidor" });
+  await card.getByRole("button", { name: "Remover", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Remover", exact: true })
+    .click();
+  await expect(
+    page.locator("article.server-card").filter({ hasText: "Segundo servidor" }),
+  ).toHaveCount(0);
+});
+
