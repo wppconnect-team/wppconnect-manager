@@ -33,7 +33,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.2",
-    "eslint": "10.10.0",
+    "eslint": "10.13.0",
     "prettier": "^3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.2",
