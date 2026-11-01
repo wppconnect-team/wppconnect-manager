@@ -177,8 +177,8 @@ export default function App() {
             <img
               src={
                 dark
-                  ? "/manager/brand/wppconnect-dark.png"
-                  : "/manager/brand/wppconnect-light.png"
+                  ? "/manager/brand/v2/wppconnect-dark.png"
+                  : "/manager/brand/v2/wppconnect-light.png"
               }
               alt="WPPConnect"
               width="120"
